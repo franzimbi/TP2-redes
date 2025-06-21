@@ -13,7 +13,7 @@ import json
 log = core . getLogger ()
 
 class Firewall (EventMixin) :
-    def init (self) :
+    def __init__(self):
         self.listenTo( core . openflow )
         log.debug( " Enabling ␣ Firewall ␣ Module " )
         self._set_rules('../rules.json')
@@ -28,14 +28,37 @@ class Firewall (EventMixin) :
 
     def _add_rule(self, rule, connection):
         rule_msg = of.ofp_flow_mod()
-        self._set_match_field(rule, rule_msg.match, 'dl_type', 'dl_type')
+
+        if ('src_port' in rule or 'dst_port' in rule) and 'tr_proto' not in rule:
+            for proto in [6, 17]:
+                rule_copy = dict(rule)
+                rule_copy['tr_proto'] = proto
+                self._add_rule(rule_copy, connection)
+            return rule_msg
+
+        if any(k in rule for k in ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'tr_proto']):
+            rule_msg.match.dl_type = 0x0800
+
         self._set_match_field(rule, rule_msg.match, 'tr_proto', 'nw_proto')
         self._set_match_field(rule, rule_msg.match, 'src_ip', 'nw_src')
         self._set_match_field(rule, rule_msg.match, 'dst_ip', 'nw_dst')
         self._set_match_field(rule, rule_msg.match, 'src_port', 'tp_src')
         self._set_match_field(rule, rule_msg.match, 'dst_port', 'tp_dst')
+
+
+        rule_msg.priority = rule.get('priority', 1)
+
+        action = rule.get('action', 'drop').lower()
+
+        if action == 'allow':
+            rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_NORMAL))
+        else:
+            pass
+
         connection.send(rule_msg)
         return rule_msg
+
+
 
     def _set_match_field(self, rule, rule_msg, key, field):
         value = rule.get(key)

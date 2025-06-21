@@ -2,35 +2,26 @@
   {
       "comment": "permitir todos los demas",
       "action": "allow",
-      "priority": 1
+      "priority": 0
   },
   {
       "comment": "Regla 1: Descartar todos los mensajes con puerto destino 80",
-      "tr_proto": 6,
-      "dst_port": 80,
-      "action": "drop",
-      "priority": 100
+      "dst_port": 80
   },
   {
       "comment": "Regla 2: Descartar mensajes UDP desde host 1 con puerto destino 5001",
       "src_ip": "10.0.0.1",
       "tr_proto": 17,
-      "dst_port": 5001,
-      "action": "drop",
-      "priority": 100
+      "dst_port": 5001
   },
   {
       "comment": "Regla 3a: Bloquear toda comunicación de h2 hacia h4",
       "src_ip": "10.0.0.2",
-      "dst_ip": "10.0.0.4",
-      "action": "drop",
-      "priority": 100
+      "dst_ip": "10.0.0.4"
   },
   {
       "comment": "Regla 3b: Bloquear toda comunicación de h4 hacia h2",
       "src_ip": "10.0.0.4",
-      "dst_ip": "10.0.0.2",
-      "action": "drop",
-      "priority": 100
+      "dst_ip": "10.0.0.2"
   }
 ]
