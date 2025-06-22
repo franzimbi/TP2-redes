@@ -3,7 +3,7 @@
 terminal 1:
 
 cd ~/pox
-./pox.py forwarding.l2_learning firewall
+python3 pox.py samples.pretty_log forwarding.l2_learning ext.firewall
 
 
 terminal 2:
@@ -11,7 +11,6 @@ terminal 2:
 sudo mn -c (limpia mininet)
 
 sudo python3 topologia.py 3
-
 
 
 Regla 1: Puerto 80 bloqueado (HTTP)
