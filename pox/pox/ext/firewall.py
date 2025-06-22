@@ -15,8 +15,7 @@ log = core . getLogger ()
 class Firewall (EventMixin) :
     def __init__(self):
         self.listenTo( core . openflow )
-        log.debug( " Enabling ␣ Firewall ␣ Module " )
-        self._set_rules('../rules.json')
+        self._set_rules('rules.json')
 
     def _handle_ConnectionUp (self, event) :
         self._load_rules(event.connection)
@@ -45,18 +44,57 @@ class Firewall (EventMixin) :
         self._set_match_field(rule, rule_msg.match, 'src_port', 'tp_src')
         self._set_match_field(rule, rule_msg.match, 'dst_port', 'tp_dst')
 
-
         rule_msg.priority = rule.get('priority', 1)
 
         action = rule.get('action', 'drop').lower()
 
+        # Log the comment of the rule being added
+        comment = rule.get('comment', 'Sin comentario')
+        log.info(f"Cargando regla: {comment}")
+
         if action == 'allow':
             rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_NORMAL))
         else:
-            pass
+            rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
 
         connection.send(rule_msg)
         return rule_msg
+
+
+    def _handle_PacketIn(self, event):
+        pkt = event.parsed
+        ip_pkt = pkt.find('ipv4')
+        tcp_pkt = pkt.find('tcp')
+        udp_pkt = pkt.find('udp')
+
+        src_ip = str(ip_pkt.srcip) if ip_pkt else None
+        dst_ip = str(ip_pkt.dstip) if ip_pkt else None
+        proto = ip_pkt.protocol if ip_pkt else None
+        src_port = tcp_pkt.srcport if tcp_pkt else (udp_pkt.srcport if udp_pkt else None)
+        dst_port = tcp_pkt.dstport if tcp_pkt else (udp_pkt.dstport if udp_pkt else None)
+
+        for rule in self.rules:
+            if rule.get('action') == 'allow':
+                continue
+
+            if rule.get('src_ip') and rule['src_ip'] != src_ip:
+                continue
+            if rule.get('dst_ip') and rule['dst_ip'] != dst_ip:
+                continue
+            if rule.get('tr_proto') and rule['tr_proto'] != proto:
+                continue
+            if rule.get('src_port') and rule['src_port'] != src_port:
+                continue
+            if rule.get('dst_port') and rule['dst_port'] != dst_port:
+                continue
+
+            comment = rule.get('comment', 'Sin comentario')
+            log.info(f"[DROP] Por la regla: {comment} Se bloqueo un paquete: desde {src_ip}:{src_port} hacia {dst_ip}:{dst_port}")
+            return
+
+        return
+
+
 
 
 
