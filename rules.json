@@ -11,7 +11,7 @@
   {
       "comment": "Regla 2: Descartar mensajes UDP desde host 1 con puerto destino 5001",
       "src_ip": "10.0.0.1",
-      "tr_proto": 17,
+      "tr_proto": "udp",
       "dst_port": 5001
   },
   {

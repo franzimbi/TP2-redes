@@ -12,6 +12,14 @@ import os
 import json
 log = core . getLogger ()
 
+NORMALIZE_MAP = {
+    'tcp': 6,
+    'udp': 17,
+    'ipv4': 0x0800,
+    'ipv6': 0x86DD
+}
+
+
 class Firewall (EventMixin) :
     def __init__(self):
         self.listenTo( core . openflow )
@@ -22,21 +30,40 @@ class Firewall (EventMixin) :
 
     def _load_rules(self, connection):
         for rule in self.rules:
-            self._add_rule(rule, connection)
+            normalized_rule = self._normalize_rule(rule)
+            self._add_rule(normalized_rule, connection)
+
+
+    def _normalize_rule(self, rule):
+
+        if 'tr_proto' in rule and isinstance(rule['tr_proto'], str):
+            rule['tr_proto'] = NORMALIZE_MAP.get(rule['tr_proto'].lower(), rule['tr_proto'])
+
+        if 'nw_proto' in rule and isinstance(rule['nw_proto'], str):
+            rule['nw_proto'] = NORMALIZE_MAP.get(rule['nw_proto'].lower(), rule['nw_proto'])
+
+        return rule
+
 
 
     def _add_rule(self, rule, connection):
         rule_msg = of.ofp_flow_mod()
 
         if ('src_port' in rule or 'dst_port' in rule) and 'tr_proto' not in rule:
-            for proto in [6, 17]:
+            for proto_name in ['tcp', 'udp']:
                 rule_copy = dict(rule)
-                rule_copy['tr_proto'] = proto
+                rule_copy['tr_proto'] = NORMALIZE_MAP[proto_name]
+                comment_original = rule_copy.get('comment', '')
+                suffix = f" version {proto_name.upper()}"
+                rule_copy['comment'] = comment_original + suffix
                 self._add_rule(rule_copy, connection)
             return rule_msg
 
-        if any(k in rule for k in ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'tr_proto']):
-            rule_msg.match.dl_type = 0x0800
+
+        if 'nw_proto' in rule:
+            rule_msg.match.dl_type = rule['nw_proto']
+        elif any(k in rule for k in ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'tr_proto']):
+            rule_msg.match.dl_type = NORMALIZE_MAP.get('ipv4')
 
         self._set_match_field(rule, rule_msg.match, 'tr_proto', 'nw_proto')
         self._set_match_field(rule, rule_msg.match, 'src_ip', 'nw_src')
@@ -48,7 +75,6 @@ class Firewall (EventMixin) :
 
         action = rule.get('action', 'drop').lower()
 
-        # Log the comment of the rule being added
         comment = rule.get('comment', 'Sin comentario')
         log.info(f"Cargando regla: {comment}")
 
