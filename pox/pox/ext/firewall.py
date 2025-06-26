@@ -65,11 +65,13 @@ class Firewall (EventMixin) :
         elif any(k in rule for k in ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'tr_proto']):
             rule_msg.match.dl_type = NORMALIZE_MAP.get('ipv4')
 
-        self._set_match_field(rule, rule_msg.match, 'tr_proto', 'nw_proto')
-        self._set_match_field(rule, rule_msg.match, 'src_ip', 'nw_src')
-        self._set_match_field(rule, rule_msg.match, 'dst_ip', 'nw_dst')
-        self._set_match_field(rule, rule_msg.match, 'src_port', 'tp_src')
-        self._set_match_field(rule, rule_msg.match, 'dst_port', 'tp_dst')
+        if rule_msg.match.dl_type != NORMALIZE_MAP.get('ipv6'):
+            self._set_match_field(rule, rule_msg.match, 'tr_proto', 'nw_proto')
+            self._set_match_field(rule, rule_msg.match, 'src_ip', 'nw_src')
+            self._set_match_field(rule, rule_msg.match, 'dst_ip', 'nw_dst')
+            self._set_match_field(rule, rule_msg.match, 'src_port', 'tp_src')
+            self._set_match_field(rule, rule_msg.match, 'dst_port', 'tp_dst')
+
         self._set_match_field(rule, rule_msg.match, 'src_mac', 'dl_src')
         self._set_match_field(rule, rule_msg.match, 'dst_mac', 'dl_dst')
 
