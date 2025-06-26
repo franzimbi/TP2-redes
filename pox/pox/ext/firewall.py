@@ -70,6 +70,9 @@ class Firewall (EventMixin) :
         self._set_match_field(rule, rule_msg.match, 'dst_ip', 'nw_dst')
         self._set_match_field(rule, rule_msg.match, 'src_port', 'tp_src')
         self._set_match_field(rule, rule_msg.match, 'dst_port', 'tp_dst')
+        self._set_match_field(rule, rule_msg.match, 'src_mac', 'dl_src')
+        self._set_match_field(rule, rule_msg.match, 'dst_mac', 'dl_dst')
+
 
         rule_msg.priority = rule.get('priority', 1)
 
@@ -81,7 +84,7 @@ class Firewall (EventMixin) :
         if action == 'allow':
             rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_NORMAL))
         else:
-            # rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
+            #rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
             pass
 
         connection.send(rule_msg)
@@ -125,6 +128,8 @@ class Firewall (EventMixin) :
     def _set_match_field(self, rule, rule_msg, key, field):
         value = rule.get(key)
         if value is not None:
+            if key in ['src_mac', 'dst_mac']:
+                value = EthAddr(value)
             setattr(rule_msg, field, value)
 
     def _set_rules(self, f_name):
