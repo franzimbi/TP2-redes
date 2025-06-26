@@ -81,7 +81,8 @@ class Firewall (EventMixin) :
         if action == 'allow':
             rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_NORMAL))
         else:
-            rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
+            # rule_msg.actions.append(of.ofp_action_output(port=of.OFPP_CONTROLLER))
+            pass
 
         connection.send(rule_msg)
         return rule_msg
@@ -119,9 +120,6 @@ class Firewall (EventMixin) :
             return
 
         return
-
-
-
 
 
     def _set_match_field(self, rule, rule_msg, key, field):
