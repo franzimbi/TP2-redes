@@ -49,7 +49,7 @@ class Firewall (EventMixin) :
     def _add_rule(self, rule, connection):
         rule_msg = of.ofp_flow_mod()
 
-        if ('src_port' in rule or 'dst_port' in rule) and 'tr_proto' not in rule:
+        if ('src_port' in rule or 'dst_port' in rule) and 'tr_proto' not in rule and 'nw_proto' not in rule:
             for proto_name in ['tcp', 'udp']:
                 rule_copy = dict(rule)
                 rule_copy['tr_proto'] = NORMALIZE_MAP[proto_name]
